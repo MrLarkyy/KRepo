@@ -9,6 +9,16 @@ import software.amazon.awssdk.services.s3.model.S3Exception
 @ControllerAdvice
 class GlobalExceptionHandler {
 
+    @ExceptionHandler(StorageException::class)
+    fun handleStorageError(ex: StorageException): ResponseEntity<Map<String, String>> {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(
+            mapOf(
+                "error" to "Storage Provider Error",
+                "message" to (ex.message ?: "Unknown error occurred")
+            )
+        )
+    }
+
     @ExceptionHandler(S3Exception::class)
     fun handleS3Error(ex: S3Exception): ResponseEntity<Map<String, String>> {
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(

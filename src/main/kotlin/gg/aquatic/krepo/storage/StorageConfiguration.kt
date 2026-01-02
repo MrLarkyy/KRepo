@@ -18,7 +18,7 @@ class StorageConfiguration {
 
         private var provider: S3StorageProvider? = null
 
-        @Bean
+        @Bean(destroyMethod = "shutdown")
         fun s3StorageProvider(): StorageProvider {
             return S3StorageProvider(s3Properties).also { this.provider = it }
         }

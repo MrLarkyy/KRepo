@@ -8,4 +8,6 @@ interface StorageProvider {
     suspend fun delete(path: String): Boolean
     suspend fun exists(path: String): Boolean
     suspend fun usage(): Long
+
+    fun shutdown()
 }
