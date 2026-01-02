@@ -22,3 +22,8 @@ class AuthenticationFailedException(message: String = "Invalid username or passw
     status = HttpStatus.UNAUTHORIZED,
     code = "auth_failed"
 )
+class KRepoAccessDeniedException(message: String = "You do not have permission to access this resource") : KRepoException(
+    message = message,
+    status = HttpStatus.UNAUTHORIZED,
+    code = "unauthorized"
+)

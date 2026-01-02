@@ -1,4 +1,9 @@
 spring:
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 500MB # Adjust based on your needs
+      max-request-size: 500MB
   application:
     name: KRepo
 
@@ -9,11 +14,14 @@ krepo:
       secret-key: "${JWT_SECRET:very-long-secret-key-that-is-at-least-thirty-two-characters-long}"
       expiration-ms: 3600000 # 1 hour
   storage:
-    type: s3
-    s3:
-      bucket: my-repo-bucket
-      region: eu-central-1
-      access-key: "YOUR_KEY"
-      secret-key: "YOUR_SECRET"
+    type: fs # Change from s3 to fs for local testing
+    fs:
+      path: "./data/repositories"
+    #type: s3
+    #s3:
+      #bucket: my-repo-bucket
+      #region: eu-central-1
+      #access-key: "YOUR_KEY"
+      #secret-key: "YOUR_SECRET"
       # endpoint: "http://localhost:9000" # If using MinIO
       # path-style-access: true # If using MinIO

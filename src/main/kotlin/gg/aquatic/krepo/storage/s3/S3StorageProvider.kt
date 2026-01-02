@@ -18,8 +18,9 @@ import java.util.concurrent.Executors
 class S3StorageProvider(private val properties: S3StorageProperties) : StorageProvider {
 
     private val log = LoggerFactory.getLogger(S3StorageProvider::class.java)
-    private val s3ReadExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2)
-
+    private val s3ReadExecutor = Executors.newFixedThreadPool(
+        Runtime.getRuntime().availableProcessors() * 4
+    )
 
     private val s3Client: S3AsyncClient = S3AsyncClient.builder()
         .region(Region.of(properties.region))

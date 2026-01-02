@@ -14,7 +14,7 @@ class UserInitializer(
 
     private val log = LoggerFactory.getLogger(UserInitializer::class.java)
 
-    override fun run(vararg args: String?) {
+    override fun run(vararg args: String) {
         if (userRepository.count() == 0L) {
             val initialPassword = UUID.randomUUID().toString().take(12)
             val admin = User(
