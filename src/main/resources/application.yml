@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: KRepo
+
+krepo:
+  security:
+    jwt:
+      # Use a long random string in production!
+      secret-key: "${JWT_SECRET:very-long-secret-key-that-is-at-least-thirty-two-characters-long}"
+      expiration-ms: 3600000 # 1 hour
+  storage:
+    type: s3
+    s3:
+      bucket: my-repo-bucket
+      region: eu-central-1
+      access-key: "YOUR_KEY"
+      secret-key: "YOUR_SECRET"
+      # endpoint: "http://localhost:9000" # If using MinIO
+      # path-style-access: true # If using MinIO
