@@ -15,7 +15,7 @@ class DeployToken(
     val name: String,
 
     @Column(unique = true, nullable = false)
-    val tokenHash: String, // Store the HASHED value
+    var tokenHash: String, // Store the HASHED value
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

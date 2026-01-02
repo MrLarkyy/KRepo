@@ -10,10 +10,10 @@ class User(
     val id: Long? = null,
 
     @Column(unique = true, nullable = false)
-    val username: String = "", // Add default value
+    val username: String = "",
 
     @Column(nullable = false)
-    var password: String = "", // Add default value
+    var password: String = "",
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = [JoinColumn(name = "user_id")])
