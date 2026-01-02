@@ -67,8 +67,7 @@ class ConsoleCommands(
             - user-promote <username>: Add admin role to a user
             - user-demote <username>: Remove admin role from a user
             - token-generate <username> <token_name> <PERMS...>: Generate a deploy token (e.g. READ,WRITE)
-                        - token-reset <username> <token_name>: Reset an existing token's value
-
+            - token-reset <username> <token_name>: Reset an existing token's value
             - exit: Shutdown the application
         """.trimIndent())
     }
