@@ -82,8 +82,6 @@ class S3StorageProvider(private val properties: S3StorageProperties) : StoragePr
             .key(path)
             .build()
 
-        // We use the transformer to get a ResponseInputStream
-        // Note: The generic type of s3Client.getObject must match the transformer's return type
         s3Client.getObject(getObjectRequest, AsyncResponseTransformer.toBlockingInputStream()).await()
     } catch (e: Exception) {
         val cause = e.cause ?: e
@@ -126,7 +124,6 @@ class S3StorageProvider(private val properties: S3StorageProperties) : StoragePr
             .bucket(properties.bucket)
             .build()
 
-        // Paginator in AsyncClient returns a publisher
         s3Client.listObjectsV2Paginator(listRequest).subscribe { response ->
             totalSize += response.contents().sumOf { it.size() }
         }.await()

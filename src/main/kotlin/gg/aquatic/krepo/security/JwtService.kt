@@ -35,4 +35,15 @@ class JwtService(private val properties: SecurityProperties) {
     fun isTokenValid(token: String): Boolean {
         return extractUsername(token) != null
     }
+
+    fun extractExpiration(token: String): Date? {
+        return runCatching {
+            Jwts.parser()
+                .verifyWith(signingKey)
+                .build()
+                .parseSignedClaims(token)
+                .payload
+                .expiration
+        }.getOrNull()
+    }
 }
