@@ -39,7 +39,7 @@ class ConsoleCommands(
                         "repo-list" -> listRepos()
                         "repo-set-visibility" -> setVisibility(parts)
                         "user-list" -> listUsers()
-                        "user-create-admin" -> createAdmin(parts)
+                        "user-create" -> createUser(parts)
                         "user-delete" -> deleteUser(parts)
                         "user-promote" -> toggleAdmin(parts, true)
                         "user-demote" -> toggleAdmin(parts, false)
@@ -62,7 +62,7 @@ class ConsoleCommands(
             - repo-list: List all repositories
             - repo-set-visibility <name> <PUBLIC|PRIVATE|HIDDEN>: Change visibility
             - user-list: List all registered users
-            - user-create-admin <username> <password>: Create a new admin user
+            - user-create <username> <password> <ROLES...>: Create a user (e.g. ROLE_USER,ROLE_ADMIN)
             - user-delete <username>: Remove a user account
             - user-promote <username>: Add admin role to a user
             - user-demote <username>: Remove admin role from a user
@@ -157,10 +157,12 @@ class ConsoleCommands(
         println("Updated '$name' to $visibility.")
     }
 
-    private fun createAdmin(parts: List<String>) {
-        if (parts.size < 3) return println("Usage: user-create-admin <username> <password>")
+    private fun createUser(parts: List<String>) {
+        if (parts.size < 3) return println("Usage: user-create <username> <password> <ROLES...>")
         val username = parts[1]
         val password = parts[2]
+        // If no roles provided, default to ROLE_USER
+        val roles = if (parts.size > 3) parts.drop(3).toSet() else setOf("ROLE_USER")
 
         if (userRepository.findByUsername(username) != null) {
             return println("User '$username' already exists.")
@@ -169,9 +171,9 @@ class ConsoleCommands(
         val user = User(
             username = username,
             password = passwordEncoder.encode(password)!!,
-            roles = setOf("ROLE_USER", "ROLE_ADMIN")
+            roles = roles
         )
         userRepository.save(user)
-        println("Admin '$username' created.")
+        println("User '$username' created with roles: ${roles.joinToString(", ")}")
     }
 }
