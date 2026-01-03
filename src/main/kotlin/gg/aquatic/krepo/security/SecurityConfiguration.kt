@@ -21,28 +21,26 @@ class SecurityConfiguration(
 ) {
 
     @Bean
-    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
+    fun securityFilterChain(http: HttpSecurity, deployTokenAuthenticationProvider: AuthenticationProvider): SecurityFilterChain {
         http
             .csrf { it.disable() }
+            .cors { it.disable() }
             .authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers("/api/auth/**").permitAll()
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                    // If a repository is private, Spring should challenge for authentication
-                    // For now, we'll keep GET permitted at the filter level to support your Service logic
-                    .requestMatchers(org.springframework.http.HttpMethod.GET, "/{repository}/**").permitAll()
+                    .requestMatchers("/{repository}/**").permitAll()
                     .anyRequest().authenticated()
             }
-            // Add an Entry Point to ensure 401 is returned for anonymous users on protected resources
-            .exceptionHandling {
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .authenticationProvider(authenticationProvider)
+            .authenticationProvider(deployTokenAuthenticationProvider)
+            .httpBasic {
                 it.authenticationEntryPoint { _, response, _ ->
-                    response.sendError(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")
+                    response.setHeader("WWW-Authenticate", "Basic realm=\"KRepo\"")
+                    response.sendError(401, "Unauthorized")
                 }
             }
-            .sessionManagement { session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            }
-            .authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
 
         return http.build()

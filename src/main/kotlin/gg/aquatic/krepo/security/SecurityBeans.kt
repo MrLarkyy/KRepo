@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.AuthenticationProvider
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
 import org.springframework.security.core.userdetails.UserDetailsService
@@ -35,6 +36,32 @@ class SecurityBeans(private val userRepository: UserRepository) {
         val authProvider = DaoAuthenticationProvider(userDetailsService())
         authProvider.setPasswordEncoder(passwordEncoder())
         return authProvider
+    }
+
+    @Bean
+    fun deployTokenAuthenticationProvider(
+        deployTokenRepository: DeployTokenRepository,
+        userDetailsService: UserDetailsService,
+        passwordEncoder: PasswordEncoder
+    ): AuthenticationProvider = object : AuthenticationProvider {
+        override fun authenticate(authentication: org.springframework.security.core.Authentication): org.springframework.security.core.Authentication? {
+            val username = authentication.name
+            val password = authentication.credentials.toString()
+
+            if (!password.startsWith("tk_")) return null
+
+            val tokens = deployTokenRepository.findAllByOwnerUsername(username)
+            val matchedToken = tokens.find { passwordEncoder.matches(password, it.tokenHash) } ?: return null
+
+            val authorities = matchedToken.permissions.map {
+                org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_TOKEN_${it.uppercase()}")
+            }
+            val userDetails = userDetailsService.loadUserByUsername(username)
+            return UsernamePasswordAuthenticationToken(userDetails, null, authorities)
+        }
+
+        override fun supports(authentication: Class<*>): Boolean =
+            UsernamePasswordAuthenticationToken::class.java.isAssignableFrom(authentication)
     }
 
     @Bean

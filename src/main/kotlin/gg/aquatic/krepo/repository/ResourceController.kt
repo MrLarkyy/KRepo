@@ -33,14 +33,21 @@ class ResourceController(private val repositoryService: RepositoryService) {
     suspend fun putResource(
         @PathVariable repository: String,
         @RequestHeader(value = "Content-Length", required = false) contentLength: Long?,
+        @RequestHeader(value = "Authorization", required = false) authHeader: String?,
         request: HttpServletRequest
     ): ResponseEntity<Unit> {
+        if (authHeader == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .header("WWW-Authenticate", "Basic realm=\"KRepo\"")
+                .build()
+        }
+
         val path = extractPath(request, repository)
 
         val length = contentLength ?: throw KRepoException("Content-Length is required", HttpStatus.LENGTH_REQUIRED)
         if (length <= 0) throw KRepoException("Content-Length must be greater than 0")
 
-        repositoryService.uploadFile(repository, path, request.inputStream, length)
+        repositoryService.uploadFile(repository, path, request.inputStream, length, authHeader)
             .getOrThrow()
 
         return ResponseEntity.status(HttpStatus.CREATED).build()
@@ -58,6 +65,12 @@ class ResourceController(private val repositoryService: RepositoryService) {
 
     private fun extractPath(request: HttpServletRequest, repository: String): String {
         val fullPath = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE) as String
-        return fullPath.removePrefix("/$repository").trimStart('/')
+        val path = fullPath.removePrefix("/$repository").trimStart('/')
+
+        if (path.contains("..") || path.contains("//")) {
+            throw KRepoException("Invalid path: Path traversal or empty segments are not allowed", HttpStatus.BAD_REQUEST)
+        }
+
+        return path
     }
 }
