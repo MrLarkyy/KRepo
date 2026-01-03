@@ -22,8 +22,9 @@ class DeployTokenController(
     }
 
     @GetMapping
-    fun list(@AuthenticationPrincipal userDetails: UserDetails): List<TokenSummary> {
-        return tokenRepository.findAllByOwnerUsername(userDetails.username).map {
+    fun list(@AuthenticationPrincipal userDetails: UserDetails?): List<TokenSummary> {
+        val user = userDetails ?: throw gg.aquatic.krepo.error.KRepoAccessDeniedException("Authentication required")
+        return tokenRepository.findAllByOwnerUsername(user.username).map {
             TokenSummary(it.id!!, it.name, it.createdAt, it.permissions)
         }
     }
