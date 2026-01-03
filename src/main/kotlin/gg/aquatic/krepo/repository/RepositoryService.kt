@@ -2,7 +2,6 @@ package gg.aquatic.krepo.repository
 
 import gg.aquatic.krepo.error.KRepoAccessDeniedException
 import gg.aquatic.krepo.error.KRepoException
-import gg.aquatic.krepo.security.DeployTokenRepository
 import gg.aquatic.krepo.storage.StorageProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -10,10 +9,9 @@ import org.springframework.http.HttpStatus
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import java.io.InputStream
-import java.util.Base64
+import java.util.*
 import kotlin.jvm.optionals.getOrNull
 
 @Service
@@ -77,7 +75,7 @@ class RepositoryService(
                 throw KRepoException("Invalid upload path", HttpStatus.BAD_REQUEST)
             }
 
-            // 3. Ensure Repository exists
+            // 3. Ensure a Repository exists
             if (!repositoryRepository.existsById(repositoryName)) {
                 repositoryRepository.save(RepositoryEntity(repositoryName))
             }
