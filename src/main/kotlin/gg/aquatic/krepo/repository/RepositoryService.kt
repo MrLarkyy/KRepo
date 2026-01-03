@@ -20,14 +20,11 @@ import kotlin.jvm.optionals.getOrNull
 class RepositoryService(
     private val repositoryRepository: RepositoryRepository,
     private val storageProvider: StorageProvider,
-    private val deployTokenRepository: DeployTokenRepository,
-    private val passwordEncoder: PasswordEncoder,
     private val authenticationManager: AuthenticationManager
 ) {
     suspend fun getFile(repositoryName: String, path: String): InputStream {
         val context = SecurityContextHolder.getContext()
         return withContext(Dispatchers.IO) {
-            // Manually re-set context for the IO thread if asContextElement() isn't available
             val originalContext = SecurityContextHolder.getContext()
             try {
                 SecurityContextHolder.setContext(context)
@@ -67,50 +64,37 @@ class RepositoryService(
         contentLength: Long,
         authHeader: String
     ): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            validateUploadAuth(authHeader)
+        runCatching {
+            // 1. Validate Authentication & Permissions
+            val auth = validateBasicAuth(authHeader)
+            val hasPermission = auth.authorities.any {
+                it.authority == "ROLE_ADMIN" || it.authority == "ROLE_TOKEN_WRITE"
+            }
+            if (!hasPermission) throw KRepoAccessDeniedException("Insufficient permissions for upload")
 
-            if (path.startsWith("/") || path.contains("..")) {
+            // 2. Security: Validate Path (Prevent traversal)
+            if (path.contains("..") || path.startsWith("/")) {
                 throw KRepoException("Invalid upload path", HttpStatus.BAD_REQUEST)
             }
 
+            // 3. Ensure Repository exists
             if (!repositoryRepository.existsById(repositoryName)) {
                 repositoryRepository.save(RepositoryEntity(repositoryName))
             }
 
+            // 4. Perform Upload
             val storagePath = "$repositoryName/${path.trimStart('/')}"
-            storageProvider.put(storagePath, inputStream, contentLength)
-        } catch (e: Exception) {
-            Result.failure(e)
+            storageProvider.put(storagePath, inputStream, contentLength).getOrThrow()
         }
     }
 
-    private fun validateUploadAuth(authHeader: String) {
+    private fun validateBasicAuth(authHeader: String): org.springframework.security.core.Authentication {
         val base64Auth = authHeader.removePrefix("Basic ").trim()
         val decoded = String(Base64.getDecoder().decode(base64Auth))
         val parts = decoded.split(":", limit = 2)
         if (parts.size != 2) throw KRepoAccessDeniedException("Invalid Authorization header format")
 
-        val username = parts[0]
-        val secret = parts[1]
-
-        if (secret.startsWith("tk_")) {
-            // Validate Deploy Token
-            val tokens = deployTokenRepository.findAllByOwnerUsername(username)
-            val matchedToken = tokens.find { passwordEncoder.matches(secret, it.tokenHash) }
-
-            if (matchedToken == null || !matchedToken.permissions.contains("WRITE")) {
-                throw KRepoAccessDeniedException("Invalid token or missing WRITE permission")
-            }
-        } else {
-            // Validate standard Password
-            try {
-                val auth = authenticationManager.authenticate(UsernamePasswordAuthenticationToken(username, secret))
-                val isAdmin = auth.authorities.any { it.authority == "ROLE_ADMIN" }
-                if (!isAdmin) throw KRepoAccessDeniedException("Admin role required for password-based upload")
-            } catch (e: Exception) {
-                throw KRepoAccessDeniedException("Invalid credentials")
-            }
-        }
+        val authToken = UsernamePasswordAuthenticationToken(parts[0], parts[1])
+        return authenticationManager.authenticate(authToken)
     }
 }

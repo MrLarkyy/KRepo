@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.AuthenticationProvider
+import org.springframework.security.authentication.BadCredentialsException
+import org.springframework.security.authentication.ProviderManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
@@ -46,25 +48,37 @@ class SecurityBeans(private val userRepository: UserRepository) {
     ): AuthenticationProvider = object : AuthenticationProvider {
         override fun authenticate(authentication: org.springframework.security.core.Authentication): org.springframework.security.core.Authentication? {
             val username = authentication.name
-            val password = authentication.credentials.toString()
+            val credentials = authentication.credentials.toString()
 
-            if (!password.startsWith("tk_")) return null
+            if (!credentials.startsWith("tk_")) return null
 
             val tokens = deployTokenRepository.findAllByOwnerUsername(username)
-            val matchedToken = tokens.find { passwordEncoder.matches(password, it.tokenHash) } ?: return null
+            val matchedToken = tokens.find { passwordEncoder.matches(credentials, it.tokenHash) }
+                ?: throw BadCredentialsException("Invalid deploy token")
 
             val authorities = matchedToken.permissions.map {
                 org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_TOKEN_${it.uppercase()}")
             }
+
             val userDetails = userDetailsService.loadUserByUsername(username)
             return UsernamePasswordAuthenticationToken(userDetails, null, authorities)
         }
 
-        override fun supports(authentication: Class<*>): Boolean =
-            UsernamePasswordAuthenticationToken::class.java.isAssignableFrom(authentication)
+        override fun supports(authentication: Class<*>): Boolean {
+            return UsernamePasswordAuthenticationToken::class.java.isAssignableFrom(authentication)
+        }
     }
 
     @Bean
-    fun authenticationManager(config: AuthenticationConfiguration): AuthenticationManager =
-        config.authenticationManager
+    fun authenticationManager(
+        userDetailsService: UserDetailsService,
+        passwordEncoder: PasswordEncoder,
+        deployTokenAuthenticationProvider: AuthenticationProvider
+    ): AuthenticationManager {
+        val daoProvider = DaoAuthenticationProvider(userDetailsService)
+        daoProvider.setPasswordEncoder(passwordEncoder)
+
+        // Tokens first, then standard passwords
+        return ProviderManager(deployTokenAuthenticationProvider, daoProvider)
+    }
 }

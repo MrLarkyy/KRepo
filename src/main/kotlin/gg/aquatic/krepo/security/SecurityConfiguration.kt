@@ -3,6 +3,7 @@ package gg.aquatic.krepo.security
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -21,7 +22,7 @@ class SecurityConfiguration(
 ) {
 
     @Bean
-    fun securityFilterChain(http: HttpSecurity, deployTokenAuthenticationProvider: AuthenticationProvider): SecurityFilterChain {
+    fun securityFilterChain(http: HttpSecurity, authenticationManager: AuthenticationManager): SecurityFilterChain {
         http
             .csrf { it.disable() }
             .cors { it.disable() }
@@ -33,8 +34,7 @@ class SecurityConfiguration(
                     .anyRequest().authenticated()
             }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
-            .authenticationProvider(authenticationProvider)
-            .authenticationProvider(deployTokenAuthenticationProvider)
+            .authenticationManager(authenticationManager)
             .httpBasic {
                 it.authenticationEntryPoint { _, response, _ ->
                     response.setHeader("WWW-Authenticate", "Basic realm=\"KRepo\"")
