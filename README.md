@@ -96,6 +96,11 @@ krepo:
 
 ---
 
+## 🤖 API
+[Read the API Documentation](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/MrLarkyy/KRepo/master/openapi.json)
+
+---
+
 ## 📦 Using KRepo in your Build Script
 
 To use KRepo in your Gradle project, add the following to your `build.gradle.kts`:
