@@ -31,7 +31,7 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
 
     // S3 Storage
-    implementation("software.amazon.awssdk:s3:2.42.9")
+    implementation("software.amazon.awssdk:s3:2.42.11")
 
     // JWT for Stateless Auth
     implementation("io.jsonwebtoken:jjwt-api:$jwtVersion")
