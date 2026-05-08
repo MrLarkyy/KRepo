@@ -22,7 +22,7 @@ repositories {
 }
 
 val jwtVersion = "0.13.0"
-val coroutinesVersion = "1.10.2"
+val coroutinesVersion = "1.11.0"
 
 dependencies {
 
